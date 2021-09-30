@@ -1,1 +1,1 @@
-smart contracts with ink
+smart contracts with ink!
