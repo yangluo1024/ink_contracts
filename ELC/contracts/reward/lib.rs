@@ -46,12 +46,18 @@ mod reward {
     /// to add new static storage fields to your contract.
     #[ink(storage)]
     pub struct Reward {
+        /// Total reward.
+        total_reward: u128,
+        /// Mapping from owner to reward owned.
+        rewards: StorageHashMap<AccountId, u128>,
         /// Total coinday (total_coinday, last_update_time)
         total_coinday: (u128, u128),
         /// Mapping from owner to a tuple (coinday, last_update_time)
         coindays: StorageHashMap<AccountId, Coinday>,
-        /// award info of each elc-increase period
+        /// award info of elp award each day
         awards: Vec<Award>,
+        /// begin time of distribute block awards.
+        daily_award: (u128, u128),
         /// The contract owner
         owner: AccountId,
     }
@@ -71,11 +77,25 @@ mod reward {
             let mut coindays = StorageHashMap::new();
             coindays.insert(owner, coinday_info);
             Self {
+                total_reward: 0,
+                rewards: StorageHashMap::new(),
                 total_coinday: (0, now_time),
                 coindays,
                 awards,
+                // 首日奖励20000elp
+                daily_award: (20000*1e8 as u128, now_time),
                 owner,
             }
+        }
+
+        #[ink(message)]
+        pub fn total_reward(&self) -> u128 {
+            self.total_reward
+        }
+
+        #[ink(message)]
+        pub fn reward_of(&self, user: AccountId) -> u128 {
+            self.rewards.get(&user).copied().unwrap_or(0)
         }
 
         #[ink(message)]
@@ -99,6 +119,25 @@ mod reward {
             let v = self.coindays.get(&user).unwrap_or(&coinday_info);
             (*v).clone()
         }
+
+        #[ink(message)]
+        pub fn daily_award(&self) -> (u128, u128) {
+            self.daily_award
+        }
+
+        #[ink(message)]
+        pub fn update_total_reward(&mut self, new_value: u128) -> Result<()> {
+            self.only_owner()?;
+            self.total_reward = new_value;
+            Ok(())
+        } 
+
+        #[ink(message)]
+        pub fn update_rewards(&mut self, user: AccountId, value: u128) -> Result<()> {
+            self.only_owner()?;
+            self.rewards.insert(user, value);
+            Ok(())
+        } 
 
         #[ink(message)]
         pub fn update_total_coinday(&mut self, new_value: (u128, u128)) -> Result<()> {
@@ -139,6 +178,14 @@ mod reward {
                 timestamp,
             };
             self.awards.push(new_award);
+            Ok(())
+        }
+        
+        /// update amount of award for each day(amount, timestamp).
+        #[ink(message)]
+        pub fn update_daily_award(&mut self, new_amount: (u128, u128)) -> Result<()> {
+            self.only_owner()?;
+            self.daily_award = new_amount;
             Ok(())
         }
 
@@ -182,8 +229,43 @@ mod reward {
         fn new_works() {
             let reward = Reward::new(); 
             let accounts = default_accounts();
+            assert_eq!(reward.total_reward(), 0);
+            assert_eq!(reward.reward_of(accounts.alice), 0);
             assert_eq!(reward.awards(), vec![]);
             assert_eq!(reward.owner(), accounts.alice);
+        }
+
+        #[ink::test]
+        fn update_total_reward_works() {
+            let mut reward = Reward::new();
+            assert!(reward.update_total_reward(1020).is_ok());
+            assert_eq!(reward.total_reward(), 1020);
+        }
+
+        #[ink::test]
+        fn update_total_reward_failed() {
+            let mut reward = Reward::new();
+            let accounts = default_accounts();
+            assert!(reward.transfer_ownership(accounts.bob).is_ok());
+            // bob is caller, alice is owner
+            assert_eq!(reward.update_total_reward(20), Err(Error::OnlyOwnerAccess));
+        }
+
+        #[ink::test]
+        fn update_rewards_works() {
+            let mut reward = Reward::new();
+            let accounts = default_accounts();
+            assert!(reward.update_rewards(accounts.alice, 200).is_ok());
+            assert_eq!(reward.reward_of(accounts.alice), 200);
+        }
+
+        #[ink::test]
+        fn update_rewards_failed() {
+            let mut reward = Reward::new();
+            let accounts = default_accounts();
+            assert!(reward.transfer_ownership(accounts.bob).is_ok());
+            // bob is caller, alice is owner
+            assert_eq!(reward.update_rewards(accounts.alice, 20), Err(Error::OnlyOwnerAccess));
         }
 
         #[ink::test]
@@ -233,6 +315,21 @@ mod reward {
             let accounts = default_accounts();
             assert!(reward.transfer_ownership(accounts.bob).is_ok());
             assert_eq!(reward.update_awards(10, 33, 166600), Err(Error::OnlyOwnerAccess));
+        }
+
+        #[ink::test]
+        fn update_daily_award_works() {
+            let mut reward = Reward::new();
+            assert!(reward.update_daily_award((200, 166666)).is_ok());
+            assert_eq!(reward.daily_award(), (200, 166666));
+        }
+
+        #[ink::test]
+        fn update_daily_award_failed() {
+            let mut reward = Reward::new();
+            let accounts = default_accounts();
+            assert!(reward.transfer_ownership(accounts.bob).is_ok());
+            assert_eq!(reward.update_daily_award((200, 166666)), Err(Error::OnlyOwnerAccess));
         }
 
         #[ink::test]

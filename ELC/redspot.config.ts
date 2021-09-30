@@ -13,7 +13,7 @@ export default {
     ink: {
       docker: false,
       toolchain: "nightly",
-      sources: ["contracts/**/*"],
+      sources: ["contracts/relp/*"],
     },
   },
   networks: {

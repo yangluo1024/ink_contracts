@@ -46,6 +46,10 @@ mod additional {
     /// to add new static storage fields to your contract.
     #[ink(storage)]
     pub struct Additional {
+        /// Total reward.
+        total_reward: u128,
+        /// Mapping from owner to reward owned.
+        rewards: StorageHashMap<AccountId, u128>,
         /// Total coinday (total_coinday, last_update_time)
         total_coinday: (u128, u128),
         /// Mapping from owner to a tuple (coinday, last_update_time)
@@ -71,11 +75,23 @@ mod additional {
             let mut coindays = StorageHashMap::new();
             coindays.insert(owner, coinday_info);
             Self {
+                total_reward: 0,
+                rewards: StorageHashMap::new(),
                 total_coinday: (0, now_time),
                 coindays,
                 awards,
                 owner,
             }
+        }
+
+        #[ink(message)]
+        pub fn total_reward(&self) -> u128 {
+            self.total_reward
+        }
+
+        #[ink(message)]
+        pub fn reward_of(&self, user: AccountId) -> u128 {
+            self.rewards.get(&user).copied().unwrap_or(0)
         }
 
         #[ink(message)]
@@ -99,6 +115,20 @@ mod additional {
             let v = self.coindays.get(&user).unwrap_or(&coinday_info);
             (*v).clone()
         }
+
+        #[ink(message)]
+        pub fn update_total_reward(&mut self, new_value: u128) -> Result<()> {
+            self.only_owner()?;
+            self.total_reward = new_value;
+            Ok(())
+        } 
+
+        #[ink(message)]
+        pub fn update_rewards(&mut self, user: AccountId, value: u128) -> Result<()> {
+            self.only_owner()?;
+            self.rewards.insert(user, value);
+            Ok(())
+        } 
 
         #[ink(message)]
         pub fn update_total_coinday(&mut self, new_value: (u128, u128)) -> Result<()> {
@@ -182,8 +212,43 @@ mod additional {
         fn new_works() {
             let additional = Additional::new(); 
             let accounts = default_accounts();
+            assert_eq!(additional.total_reward(), 0);
+            assert_eq!(additional.reward_of(accounts.alice), 0);
             assert_eq!(additional.awards(), vec![]);
             assert_eq!(additional.owner(), accounts.alice);
+        }
+
+        #[ink::test]
+        fn update_total_reward_works() {
+            let mut additional = Additional::new();
+            assert!(additional.update_total_reward(1020).is_ok());
+            assert_eq!(additional.total_reward(), 1020);
+        }
+
+        #[ink::test]
+        fn update_total_reward_failed() {
+            let mut additional = Additional::new();
+            let accounts = default_accounts();
+            assert!(additional.transfer_ownership(accounts.bob).is_ok());
+            // bob is caller, alice is owner
+            assert_eq!(additional.update_total_reward(20), Err(Error::OnlyOwnerAccess));
+        }
+
+        #[ink::test]
+        fn update_rewards_works() {
+            let mut additional = Additional::new();
+            let accounts = default_accounts();
+            assert!(additional.update_rewards(accounts.alice, 200).is_ok());
+            assert_eq!(additional.reward_of(accounts.alice), 200);
+        }
+
+        #[ink::test]
+        fn update_rewards_failed() {
+            let mut additional = Additional::new();
+            let accounts = default_accounts();
+            assert!(additional.transfer_ownership(accounts.bob).is_ok());
+            // bob is caller, alice is owner
+            assert_eq!(additional.update_rewards(accounts.alice, 20), Err(Error::OnlyOwnerAccess));
         }
 
         #[ink::test]

@@ -29,6 +29,9 @@ mod relp {
         InvalidAmount,
         InsufficientAllowance,
         OnlyOwnerAccess,
+        IntervalTooShort,
+        NeedLiquidateBlockReward,
+        NeedLiquidateIncreaseReward,
     }
 
     /// The RELP result type.
@@ -251,15 +254,17 @@ mod relp {
 
             let user_balance = self.balance_of(user);
             // calculate ELC reward
-            let (timestamp, index) = self.get_elc_reward(user);
-            self.increase_coinday_info(user, timestamp, index);
+            let (timestamp, index) = self.get_elc_reward(user)?;
+            self.increase_coinday_elc(user, timestamp, index);
 
-            self.get_elp_reward(user, Default::default());
+            // calculate ELP reward
+            let (_, index_elp) = self.get_elp_reward(user)?;
+            self.increase_coinday_elp(user, timestamp, index_elp);
             self.balances.insert(user, user_balance + amount); 
-            self.update_elp_reward_debt(user);
             
             // update total coinday
-            self.update_total_info(timestamp, 0);
+            self.update_total_elc(timestamp, 0);
+            self.update_total_elp(timestamp, 0);
             *self.total_supply += amount;
             self.env().emit_event(Mint { user, amount });
             Ok(())
@@ -283,16 +288,17 @@ mod relp {
             }
 
             // calculate ELC reward
-            let (timestamp, index) = self.get_elc_reward(user);
-            let decrease = self.decrease_coinday_info(user, amount, timestamp, index);
+            let (timestamp, index) = self.get_elc_reward(user)?;
+            let decrease = self.decrease_coinday_elc(user, amount, timestamp, index);
 
             // calculate ELP reward
-            self.get_elp_reward(user, Default::default());
+            let (_, index_elp) = self.get_elp_reward(user)?;
+            let decrease_elp = self.decrease_coinday_elp(user, amount, timestamp, index_elp);
             self.balances.insert(user, user_balance - amount); 
-            self.update_elp_reward_debt(user);
             
             // update total coinday
-            self.update_total_info(timestamp, decrease);
+            self.update_total_elc(timestamp, decrease);
+            self.update_total_elp(timestamp, decrease_elp);
             *self.total_supply -= amount;
             self.env().emit_event(Burn { user, amount });
             Ok(())
@@ -318,28 +324,28 @@ mod relp {
                 return Err(Error::InsufficientFreeBalance);
             }
             // Calculate current ELC rewards
-            let (time_from, index_from) = self.get_elc_reward(from);
-            let decrease = self.decrease_coinday_info(from, value, time_from, index_from);
+            let (timestamp, index_fr) = self.get_elc_reward(from)?;
+            let decrease = self.decrease_coinday_elc(from, value, timestamp, index_fr);
 
             // Calculate current ELP rewards
-            self.get_elp_reward(from, to);
+            let (_, index_fr_elp) = self.get_elp_reward(from)?;
+            let decrease_elp = self.decrease_coinday_elp(from, value, timestamp, index_fr_elp);
             self.balances.insert(from, from_balance - value);
-            self.update_elp_reward_debt(from);
 
 
             let to_balance = self.balance_of(to);
-
             // Calculate current ELC rewards
-            let (time_to, index_to) = self.get_elc_reward(to);
-            self.increase_coinday_info(to, time_to, index_to);
+            let (_, index_to) = self.get_elc_reward(to)?;
+            self.increase_coinday_elc(to, timestamp, index_to);
 
             // Calculate current ELP rewards
-            // self.get_elp_reward(to);
+            let (_, index_to_elp) = self.get_elp_reward(to)?;
+            self.increase_coinday_elp(to, timestamp, index_to_elp);
             self.balances.insert(to, to_balance + value);
-            self.update_elp_reward_debt(to);
             
             // update total coinday
-            self.update_total_info(time_to, decrease);
+            self.update_total_elc(timestamp, decrease);
+            self.update_total_elp(timestamp, decrease_elp);
             self.env().emit_event(Transfer {
                 from: Some(from),
                 to: Some(to),
@@ -373,158 +379,84 @@ mod relp {
         // TODO: 此函数只用于redspot测试，因stable合约无法测试，在此增加接口用于获取ELC增发奖励
         // 后续删除此函数
         #[ink(message)]
-        pub fn relp_update_awards(&mut self, elc_amount: u128) {
-            let _ = self.only_owner();
+        pub fn update_increase_awards(&mut self, elc_amount: u128) -> Result<()> {
+            self.only_owner()?;
             let now_time = self.env().block_timestamp().into();
             let (cur_total_coinday, last_time) = self.add_contract.total_coinday();
             let total_supply = self.total_supply();
             let increase_coinday = total_supply * (now_time - last_time);
             let new_total_coinday = cur_total_coinday + increase_coinday;
+            // update total reward
+            let old_total_reward = self.add_contract.total_reward();
+            assert!(self.add_contract.update_total_reward(elc_amount + old_total_reward).is_ok());
             // update total coinday
             assert!(self.add_contract.update_total_coinday((new_total_coinday, now_time)).is_ok());
             // let per_coinday = elc_amount * 1e12 as u128 / new_total_coinday;
             // let new_value = (per_coinday, now_time);
             assert!(self.add_contract.update_awards(elc_amount, new_total_coinday, now_time).is_ok());
+            Ok(())
         }
 
-        // 更新状态
-        fn update_elp_reward_debt(&mut self, user: AccountId) {
-            let user_balance = self.balance_of(user);
-            let reward_debt = user_balance * self.reward_contract.acc_elp_pershare();
-            assert!(self.reward_contract.update_reward_debts(user, reward_debt).is_ok());
-        }
-
-        // 领取奖励
-        fn get_elp_reward(&mut self, user: AccountId, user2: AccountId) {
-            let total_supply = self.total_supply();
-            let now_time = self.env().block_timestamp().into();
-            if total_supply > 0 {
-                let delta_award = self.get_delta_reward(now_time);
-                if delta_award > 0 {
-                    // calculate new `acc_elp_pershare`
-                    let acc_elp_pershare = self.reward_contract.acc_elp_pershare();
-                    let delta_acc_elp_pershare = delta_award / total_supply;
-                    let new_acc_elp_pershare = acc_elp_pershare + delta_acc_elp_pershare;
-
-                    // calculate new `total_reward`
-                    let total_reward = self.reward_contract.total_reward();
-                    let new_total_reward = total_reward + delta_award;
-
-                    self.update_user_reward(new_total_reward, user, delta_award, new_acc_elp_pershare);
-                    if user2 != Default::default() {
-                        self.update_user_reward(new_total_reward, user2, delta_award, new_acc_elp_pershare);
-                    }
-                }
-            } else {
-                // just update time
-                let last_record = self.reward_contract.get_last_record();
-                assert!(self.reward_contract.update_last_record_infos(
-                    last_record.day_award, 
-                    last_record.block_award, 
-                    now_time
-                ).is_ok());
-            }
-        }
-        
-        fn update_user_reward(
-            &mut self, 
-            new_total_reward: u128,
-            user: AccountId, 
-            delta_award: u128,
-            new_acc_elp_pershare: u128,
-        ) {
-            // calculate new reward of user
-            let user_balance = self.balance_of(user);
-            let old_reward = self.reward_contract.reward_of(user);
-            let reward_debt = self.reward_contract.reward_debt_of(user);
-            let reward_all = user_balance * new_acc_elp_pershare;
-            let new_reward = old_reward + reward_all - reward_debt;
-
-            // update elp raward infos
-            assert!(self.reward_contract.update_reward_infos(
-                new_total_reward, 
-                user, new_reward, 
-                new_acc_elp_pershare
-            ).is_ok());
-        }
-
-        fn get_delta_reward(&mut self, now_time: u128) -> Balance {
-            // 从上次整数天奖励的区块高度算起，得到相对区块高度，从而算出截止当前交易产生的delta award.
-            let last_record = self.reward_contract.get_last_record();
-            let cur_days_reward_time = last_record.day_time;
-            let relative_block_height_period = now_time - cur_days_reward_time;
-            // TODO: 此处默认是3s出块，对应的日出块就是28800, 后续优化
-            let block_each = 3 * 1000;
-            let mut days = relative_block_height_period / (28800 * block_each);
-
-            // 得到当前日奖励额award
-            let (mut award, mut sum) = (last_record.day_award, 0);
-            // 当日出块奖励为0时，即200万奖励已经分发完，直接返回0
-            if award == 0 { return 0 }
-
-            // 保存交易最近整数天的时间点，用于更新
-            let new_last_days_reward_time = cur_days_reward_time + days * 24 * 3600 * 1000;
-
-            // 记录除整数天外，多余区块数block_nums, 如交易当天0点后的出块数，用于计算last_blocks_reward
-            let block_nums_period = relative_block_height_period - 28800 * days * block_each;
-            // 消耗days，计算离上次最近整数天区间的整数天出块总奖励sum, 以及交易当天日出块奖励award值
-            while days > 0 {
-                if award == 0 { break }
-                sum += award;
-                award = award * 99 / 100;
-                days -= 1;
-            }
-
-            let cur_last_blocks_reward = last_record.block_award;
-            let new_last_blocks_reward = award * block_nums_period / (28800 * block_each);  
-
-            // update `last_day_reward_amount`, `last_blocks_reward`
-            assert!(self.reward_contract.update_last_record_infos(
-                award, 
-                new_last_blocks_reward, 
-                new_last_days_reward_time
-            ).is_ok());
-            
-            // calculate `delta_award` and return it.
-            sum + new_last_blocks_reward - cur_last_blocks_reward
-        }
-
-        fn get_elc_reward(&mut self, user: AccountId) -> (u128, u32) {
-            // calculate reward to mint elc
+        /// Liquidate increase reward manually
+        #[ink(message)]
+        pub fn liquidate_increase_reward(&mut self, user: AccountId) {
             let balance = self.balance_of(user);
             assert!(balance > 0, "need balance > 0");
+            let coinday_info = self.add_contract.get_coinday_info(user);
+            let awards = self.add_contract.awards();
+            let (index, add_times) = (coinday_info.last_index as usize, awards.len());
+            assert!(add_times > index, "should have period award exist");
 
+            let (mut elc_amount, mut i) = (0, index);
+            while i <= add_times {
+                if (i - index) >= 50 { break }
+                // 计算截止每一期奖励时间点，用户的币天数
+                let coinday_i = coinday_info.amount + balance * (awards[i].timestamp - coinday_info.timestamp);
+                // `awards` is a three elements tuple(elc_amount, cur_total_coinday, timestamp)
+                // TODO: 扩大了10**8，后续再考虑缩放
+                elc_amount += coinday_i * awards[i].amount * 1e8 as u128 / awards[i].total_coinday;
+                i += 1;    
+            }
+
+            // reward elc for user
+            if elc_amount > 0 {
+                let old_reward = self.add_contract.reward_of(user);
+                assert!(self.add_contract.update_rewards(user, elc_amount + old_reward).is_ok());
+                self.increase_coinday_elp(user, awards[i].timestamp, i as u32);
+            }
+        }
+
+        fn get_elc_reward(&mut self, user: AccountId) -> Result<(u128, u32)> {
+            // calculate reward to mint elc
+            let balance = self.balance_of(user);
             let coinday_info = self.add_contract.get_coinday_info(user);
             let awards = self.add_contract.awards();
             let (index, add_times) = (coinday_info.last_index as usize, awards.len());
             let now_time = self.env().block_timestamp().into();
-            let (mut elc_amount, mut ret_index) = (0, add_times);
-            for i in index..add_times {
-                // 一次最多领取50个区间奖励
-                if (i - index) >= 50 {
-                    ret_index = i;
-                    break; 
-                }
+            // 限制每次最多只能领取50 periods
+            if add_times - index > 50 {
+                return Err(Error::NeedLiquidateIncreaseReward);
+            }
 
+            let mut elc_amount = 0;
+            for i in index..add_times {
                 // 计算截止每一期奖励时间点，用户的币天数
                 let coinday_i = coinday_info.amount + balance * (awards[i].timestamp - coinday_info.timestamp);
-
-                // 每一期用户所得奖励额 = 当前期时间点下用户的币天数 * 每一期每币天奖励额
-                // elc_amount += coinday_i * awards[i].0; 
-                
-                // if `awards` is a three elements tuple(elc_amount, cur_total_coinday, timestamp)
+                // `awards` is a three elements tuple(elc_amount, cur_total_coinday, timestamp)
                 // TODO: 扩大了10**8，后续再考虑缩放
                 elc_amount += coinday_i * awards[i].amount * 1e8 as u128 / awards[i].total_coinday;
             }
 
             // mint elc for user
             if elc_amount > 0 {
+                let old_reward = self.add_contract.reward_of(user);
+                assert!(self.add_contract.update_rewards(user, elc_amount + old_reward).is_ok());
                 assert!(self.elc_contract.mint(user, elc_amount).is_ok());
             }
-            (now_time, ret_index as u32)
+            Ok((now_time, add_times as u32))
         }
 
-        fn decrease_coinday_info(
+        fn decrease_coinday_elc(
             &mut self, 
             user: AccountId, 
             value: Balance, 
@@ -542,7 +474,7 @@ mod relp {
             decrease_coinday
         }
 
-        fn increase_coinday_info(
+        fn increase_coinday_elc(
             &mut self, 
             user: AccountId, 
             now_time: u128,
@@ -554,11 +486,144 @@ mod relp {
             assert!(self.add_contract.update_coindays(user, new_coinday, now_time, index).is_ok());
         }
 
-        fn update_total_info(&mut self, timestamp: u128, decrease: u128) {
+        fn update_total_elc(&mut self, timestamp: u128, decrease: u128) {
             let total_info = self.add_contract.total_coinday();
             let increase_coinday = self.total_supply() * (timestamp - total_info.1);
             let new_total_coinday = total_info.0 + increase_coinday - decrease;
             assert!(self.add_contract.update_total_coinday((new_total_coinday, timestamp)).is_ok());
+        }
+
+        #[ink(message)]
+        pub fn update_block_awards(&mut self) -> Result<()> {
+            self.only_owner()?;
+            let daily_award = self.reward_contract.daily_award();
+            let now_time = self.env().block_timestamp().into();
+
+            // 两次发奖的间隔需要大于一天
+            let mut epochs = (now_time - daily_award.1) / 3600*24*1000;
+            if epochs <= 0 {
+                return Err(Error::IntervalTooShort)
+            }
+
+            // update daily award infos.
+            let new_timestamp = daily_award.1 + epochs * 3600*24*1000;
+            let (mut new_daily_amount, mut period_award) = (daily_award.0, 0);
+            while epochs > 0 {
+                period_award += new_daily_amount;
+                new_daily_amount = new_daily_amount * 99 / 100;
+                epochs -= 1;
+            }
+            assert!(self.reward_contract.update_daily_award((new_daily_amount, new_timestamp)).is_ok());
+
+            let elp_amount = period_award;
+            let (cur_total_coinday, last_time) = self.reward_contract.total_coinday();
+            let total_supply = self.total_supply();
+            let increase_coinday = total_supply * (now_time - last_time);
+            let new_total_coinday = cur_total_coinday + increase_coinday;
+
+            // update total reward
+            let old_total_reward = self.reward_contract.total_reward();
+            assert!(self.reward_contract.update_total_reward(elp_amount + old_total_reward).is_ok());
+
+            // update total coinday
+            assert!(self.reward_contract.update_total_coinday((new_total_coinday, now_time)).is_ok());
+
+            // update period award
+            assert!(self.reward_contract.update_awards(elp_amount, new_total_coinday, now_time).is_ok());
+            Ok(())
+        }
+
+        /// Liquidate block reward manually
+        #[ink(message)]
+        pub fn liquidate_block_reward(&mut self, user: AccountId) {
+            let balance = self.balance_of(user);
+            let coinday_info = self.reward_contract.get_coinday_info(user);
+            let awards = self.reward_contract.awards();
+            let (index, add_times) = (coinday_info.last_index as usize, awards.len());
+            assert!(add_times > index, "should have period award exist");
+
+            let (mut elp_amount, mut i) = (0, index);
+            while i <= add_times {
+                if (i - index) >= 50 { break }
+                // 计算截止每一期奖励时间点，用户的币天数
+                let coinday_i = coinday_info.amount + balance * (awards[i].timestamp - coinday_info.timestamp);
+                // `awards` is a three elements tuple(elp_amount, cur_total_coinday, timestamp)
+                // TODO: 扩大了10**8，后续再考虑缩放
+                elp_amount += coinday_i * awards[i].amount * 1e8 as u128 / awards[i].total_coinday;
+                i += 1;    
+            }
+
+            if elp_amount > 0 {
+                let old_reward = self.reward_contract.reward_of(user);
+                assert!(self.reward_contract.update_rewards(user, elp_amount + old_reward).is_ok());
+                self.increase_coinday_elp(user, awards[i].timestamp, i as u32);
+            }
+        }
+
+        fn get_elp_reward(&mut self, user: AccountId) -> Result<(u128, u32)> {
+            // calculate reward to mint elp
+            let balance = self.balance_of(user);
+            let coinday_info = self.reward_contract.get_coinday_info(user);
+            let awards = self.reward_contract.awards();
+            let (index, add_times) = (coinday_info.last_index as usize, awards.len());
+            let now_time = self.env().block_timestamp().into();
+            // 限制每次最多只能领取50 periods
+            if add_times - index > 50 {
+                return Err(Error::NeedLiquidateBlockReward);
+            }
+
+            let mut elp_amount = 0;
+            for i in index..add_times {
+                // 计算截止每一期奖励时间点，用户的币天数
+                let coinday_i = coinday_info.amount + balance * (awards[i].timestamp - coinday_info.timestamp);
+                // `awards` is a three elements tuple(elp_amount, cur_total_coinday, timestamp)
+                // TODO: 扩大了10**8，后续再考虑缩放
+                elp_amount += coinday_i * awards[i].amount * 1e8 as u128 / awards[i].total_coinday;
+            }
+
+            // reward elp for user
+            if elp_amount > 0 {
+                let old_reward = self.reward_contract.reward_of(user);
+                assert!(self.reward_contract.update_rewards(user, elp_amount + old_reward).is_ok());
+            }
+            Ok((now_time, add_times as u32))
+        }
+
+        fn decrease_coinday_elp(
+            &mut self, 
+            user: AccountId, 
+            value: Balance, 
+            now_time: u128,
+            index: u32
+        ) -> u128 {
+            let balance = self.balance_of(user);
+            let coinday_info = self.reward_contract.get_coinday_info(user);
+            // 先将币天更新到当前时间点
+            let cur_coinday = coinday_info.amount + balance * (now_time - coinday_info.timestamp);
+            // decrease amount = coinday of user * ( value / balance );
+            let decrease_coinday = cur_coinday * (value * 1e8 as u128 / balance) / 1e8 as u128; 
+            let new_coinday = cur_coinday - decrease_coinday;
+            assert!(self.reward_contract.update_coindays(user, new_coinday, now_time, index).is_ok());
+            decrease_coinday
+        }
+
+        fn increase_coinday_elp(
+            &mut self, 
+            user: AccountId, 
+            now_time: u128,
+            index: u32
+        ) {
+            let balance = self.balance_of(user);
+            let coinday_info = self.reward_contract.get_coinday_info(user);
+            let new_coinday = coinday_info.amount + balance * (now_time - coinday_info.timestamp);
+            assert!(self.reward_contract.update_coindays(user, new_coinday, now_time, index).is_ok());
+        }
+
+        fn update_total_elp(&mut self, timestamp: u128, decrease: u128) {
+            let total_info = self.reward_contract.total_coinday();
+            let increase_coinday = self.total_supply() * (timestamp - total_info.1);
+            let new_total_coinday = total_info.0 + increase_coinday - decrease;
+            assert!(self.reward_contract.update_total_coinday((new_total_coinday, timestamp)).is_ok());
         }
     }
 
@@ -595,33 +660,6 @@ mod relp {
             assert_eq!(relp.balance_of(accounts.alice), 0);
             assert_eq!(relp.lock_info_of(accounts.alice), (0, 0));
             assert_eq!(relp.owner(), accounts.alice);
-        }
-
-        #[ink::test]
-        fn update_lock_infos_works() {
-            let mut relp = RELP::new(
-                AccountId::from([0x01; 32]),
-                AccountId::from([0x02; 32]),
-                AccountId::from([0x03; 32])
-            );
-            let accounts = default_accounts();
-            assert!(relp.update_lock_infos(accounts.alice, (100, 5000)).is_ok());
-            assert_eq!(relp.lock_info_of(accounts.alice), (100, 5000));
-        }
-
-        #[ink::test]
-        fn update_lock_infos_failed() {
-            let mut relp = RELP::new(
-                AccountId::from([0x01; 32]),
-                AccountId::from([0x02; 32]),
-                AccountId::from([0x03; 32])
-            );
-            let accounts = default_accounts();
-            assert!(relp.transfer_ownership(accounts.bob).is_ok());
-            assert_eq!(
-                relp.update_lock_infos(accounts.alice, (100, 5000)),
-                Err(Error::OnlyOwnerAccess)
-            );
         }
 
         #[ink::test]
