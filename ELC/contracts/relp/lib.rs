@@ -492,14 +492,20 @@ mod relp {
         fn get_elc_reward(&mut self, user: AccountId) -> (u128, u32) {
             // calculate reward to mint elc
             let balance = self.balance_of(user);
-            // assert!(balance > 0, "need balance > 0");
+            assert!(balance > 0, "need balance > 0");
 
             let coinday_info = self.add_contract.get_coinday_info(user);
             let awards = self.add_contract.awards();
             let (index, add_times) = (coinday_info.last_index as usize, awards.len());
             let now_time = self.env().block_timestamp().into();
-            let mut elc_amount = 0;
+            let (mut elc_amount, mut ret_index) = (0, add_times);
             for i in index..add_times {
+                // 一次最多领取50个区间奖励
+                if (i - index) >= 50 {
+                    ret_index = i;
+                    break; 
+                }
+
                 // 计算截止每一期奖励时间点，用户的币天数
                 let coinday_i = coinday_info.amount + balance * (awards[i].timestamp - coinday_info.timestamp);
 
@@ -515,7 +521,7 @@ mod relp {
             if elc_amount > 0 {
                 assert!(self.elc_contract.mint(user, elc_amount).is_ok());
             }
-            (now_time, add_times as u32)
+            (now_time, ret_index as u32)
         }
 
         fn decrease_coinday_info(
@@ -530,7 +536,7 @@ mod relp {
             // 先将币天更新到当前时间点
             let cur_coinday = coinday_info.amount + balance * (now_time - coinday_info.timestamp);
             // decrease amount = coinday of user * ( value / balance );
-            let decrease_coinday = cur_coinday * (value * 1e18 as u128 / balance) / 1e18 as u128; 
+            let decrease_coinday = cur_coinday * (value * 1e8 as u128 / balance) / 1e8 as u128; 
             let new_coinday = cur_coinday - decrease_coinday;
             assert!(self.add_contract.update_coindays(user, new_coinday, now_time, index).is_ok());
             decrease_coinday
