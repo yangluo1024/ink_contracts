@@ -7,6 +7,7 @@ use ink_lang as ink;
 mod additional {
     #[cfg(not(feature = "ink-as-dependency"))]
     use ink_storage::collections::HashMap as StorageHashMap;
+    #[cfg(not(feature = "ink-as-dependency"))]
     use ink_prelude::vec::Vec;
     use ink_storage::traits::{SpreadLayout, PackedLayout};
 
@@ -100,8 +101,13 @@ mod additional {
         }
 
         #[ink(message)]
-        pub fn awards(&self) -> Vec<Award> {
-            self.awards.clone()
+        pub fn get_award(&self, index: u32) -> Award {
+            self.awards[index as usize].clone()
+        }
+
+        #[ink(message)]
+        pub fn awards_length(&self) -> u32 {
+            self.awards.len() as u32
         }
 
         #[ink(message)]
@@ -214,7 +220,7 @@ mod additional {
             let accounts = default_accounts();
             assert_eq!(additional.total_reward(), 0);
             assert_eq!(additional.reward_of(accounts.alice), 0);
-            assert_eq!(additional.awards(), vec![]);
+            assert_eq!(additional.awards_length(), 0);
             assert_eq!(additional.owner(), accounts.alice);
         }
 
@@ -289,7 +295,7 @@ mod additional {
             let mut additional = Additional::new();
             assert!(additional.update_awards(10, 33, 66).is_ok());
             let award = Award {amount: 10, total_coinday: 33, timestamp: 66};
-            assert_eq!(additional.awards(), vec![award]);
+            assert_eq!(additional.get_award(0), award);
         }
 
         #[ink::test]

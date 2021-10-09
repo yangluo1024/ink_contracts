@@ -31,7 +31,7 @@ let aliceELC: number = 0;
 let bobELC: number = 0;
 let charlieELC: number = 0;
 
-describe('\nELC stable currency', () => {
+describe('\nELC incremental awards to RELP holders', () => {
     after(() => {
         return api.disconnect();
     });
@@ -477,7 +477,7 @@ describe('\nELC stable currency', () => {
             const rewardAliceELC = await additional.query.rewardOf(Alice);
             const rewardBobELC = await additional.query.rewardOf(Bob);
             const rewardCharlieELC = await additional.query.rewardOf(Charlie);
-            console.log("Reward Of Alice: ", rewardAliceELC.output.toString() / 10**8);
+            console.log("\nReward Of Alice: ", rewardAliceELC.output.toString() / 10**8);
             console.log("Reward Of Bob: ", rewardBobELC.output.toString() / 10**8);
             console.log("Reward Of Charlie: ", rewardCharlieELC.output.toString() / 10**8);
             console.log("All accounts' reward:", 
@@ -485,9 +485,9 @@ describe('\nELC stable currency', () => {
                 parseFloat(rewardBobELC.output) + 
                 parseFloat(rewardCharlieELC.output)) / 10**8 );
             console.log("Total ELC increase issurance: ", totalELCReward.output.toString());
-            const aELC = await additional.query.rewardOf(Alice);
-            const bELC = await additional.query.rewardOf(Bob);
-            const cELC = await additional.query.rewardOf(Charlie);
+            const aELC = await elc.query.balanceOf(Alice);
+            const bELC = await elc.query.balanceOf(Bob);
+            const cELC = await elc.query.balanceOf(Charlie);
             const totalELCSupply = await elc.query.totalSupply();
             console.log("\nAlice's ELC balance: ", aELC.output.toString() / 10**8);
             console.log("Bob's ELC balance: ", bELC.output.toString() / 10**8);

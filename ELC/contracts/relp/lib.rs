@@ -403,18 +403,18 @@ mod relp {
             let balance = self.balance_of(user);
             assert!(balance > 0, "need balance > 0");
             let coinday_info = self.add_contract.get_coinday_info(user);
-            let awards = self.add_contract.awards();
-            let (index, add_times) = (coinday_info.last_index as usize, awards.len());
-            assert!(add_times > index, "should have period award exist");
+            let length = self.add_contract.awards_length() as usize;
+            let index = coinday_info.last_index as usize;
+            assert!(length > index, "Need to exist uncollected periods");
 
             let (mut elc_amount, mut i) = (0, index);
-            while i <= add_times {
+            while i < length {
                 if (i - index) >= 50 { break }
+                let cur_award = self.add_contract.get_award(i as u32);
                 // 计算截止每一期奖励时间点，用户的币天数
-                let coinday_i = coinday_info.amount + balance * (awards[i].timestamp - coinday_info.timestamp);
-                // `awards` is a three elements tuple(elc_amount, cur_total_coinday, timestamp)
+                let coinday_i = coinday_info.amount + balance * (cur_award.timestamp - coinday_info.timestamp);
                 // TODO: 扩大了10**8，后续再考虑缩放
-                elc_amount += coinday_i * awards[i].amount * 1e8 as u128 / awards[i].total_coinday;
+                elc_amount += coinday_i * cur_award.amount * 1e8 as u128 / cur_award.total_coinday;
                 i += 1;    
             }
 
@@ -422,29 +422,34 @@ mod relp {
             if elc_amount > 0 {
                 let old_reward = self.add_contract.reward_of(user);
                 assert!(self.add_contract.update_rewards(user, elc_amount + old_reward).is_ok());
-                self.increase_coinday_elp(user, awards[i].timestamp, i as u32);
+                let cur_award = self.add_contract.get_award(i as u32);
+                self.increase_coinday_elp(user, cur_award.timestamp, i as u32);
             }
         }
 
         fn get_elc_reward(&mut self, user: AccountId) -> Result<(u128, u32)> {
+            let now_time = self.env().block_timestamp().into();
             // calculate reward to mint elc
             let balance = self.balance_of(user);
             let coinday_info = self.add_contract.get_coinday_info(user);
-            let awards = self.add_contract.awards();
-            let (index, add_times) = (coinday_info.last_index as usize, awards.len());
-            let now_time = self.env().block_timestamp().into();
-            // 限制每次最多只能领取50 periods
-            if add_times - index > 50 {
+            let length = self.add_contract.awards_length() as usize;
+            let index = coinday_info.last_index as usize;
+            // TODO: 测试用，限制每次最多获取5 periods
+            if length - index > 5 && balance != 0 {
                 return Err(Error::NeedLiquidateIncreaseReward);
             }
+            // 对于有奖励可领取者，限制每次最多只能领取50 periods
+            // if length - index > 50 && balance != 0 {
+            //     return Err(Error::NeedLiquidateBlockReward);
+            // }
 
             let mut elc_amount = 0;
-            for i in index..add_times {
+            for i in index..length {
+                let cur_award = self.add_contract.get_award(i as u32);
                 // 计算截止每一期奖励时间点，用户的币天数
-                let coinday_i = coinday_info.amount + balance * (awards[i].timestamp - coinday_info.timestamp);
-                // `awards` is a three elements tuple(elc_amount, cur_total_coinday, timestamp)
+                let coinday_i = coinday_info.amount + balance * (cur_award.timestamp - coinday_info.timestamp);
                 // TODO: 扩大了10**8，后续再考虑缩放
-                elc_amount += coinday_i * awards[i].amount * 1e8 as u128 / awards[i].total_coinday;
+                elc_amount += coinday_i * cur_award.amount * 1e8 as u128 / cur_award.total_coinday;
             }
 
             // mint elc for user
@@ -453,7 +458,7 @@ mod relp {
                 assert!(self.add_contract.update_rewards(user, elc_amount + old_reward).is_ok());
                 assert!(self.elc_contract.mint(user, elc_amount).is_ok());
             }
-            Ok((now_time, add_times as u32))
+            Ok((now_time, length as u32))
         }
 
         fn decrease_coinday_elc(
@@ -496,23 +501,31 @@ mod relp {
         #[ink(message)]
         pub fn update_block_awards(&mut self) -> Result<()> {
             self.only_owner()?;
+            let total_supply = self.total_supply();
+            assert!(total_supply > 0, "Need total supply > 0");
             let daily_award = self.reward_contract.daily_award();
             let now_time = self.env().block_timestamp().into();
 
-            // 两次发奖的间隔需要大于一天
-            let mut epochs = (now_time - daily_award.1) / 3600*24*1000;
+            // TODO: 测试用，两次发奖间隔大于半小时
+            let mut epochs = (now_time - daily_award.1) / (1800*1000);
             if epochs <= 0 {
                 return Err(Error::IntervalTooShort)
             }
+            let new_timestamp = daily_award.1 + epochs * 1800*1000;
+            // // 两次发奖的间隔需要大于一天
+            // let mut epochs = (now_time - daily_award.1) / (3600*24*1000);
+            // if epochs <= 0 {
+            //     return Err(Error::IntervalTooShort)
+            // }
+            // let new_timestamp = daily_award.1 + epochs * 3600*24*1000;
 
-            // update daily award infos.
-            let new_timestamp = daily_award.1 + epochs * 3600*24*1000;
             let (mut new_daily_amount, mut period_award) = (daily_award.0, 0);
             while epochs > 0 {
                 period_award += new_daily_amount;
                 new_daily_amount = new_daily_amount * 99 / 100;
                 epochs -= 1;
             }
+            // update daily award infos.
             assert!(self.reward_contract.update_daily_award((new_daily_amount, new_timestamp)).is_ok());
 
             let elp_amount = period_award;
@@ -538,47 +551,60 @@ mod relp {
         pub fn liquidate_block_reward(&mut self, user: AccountId) {
             let balance = self.balance_of(user);
             let coinday_info = self.reward_contract.get_coinday_info(user);
-            let awards = self.reward_contract.awards();
-            let (index, add_times) = (coinday_info.last_index as usize, awards.len());
-            assert!(add_times > index, "should have period award exist");
+            let length = self.reward_contract.awards_length() as usize;
+            let index = coinday_info.last_index as usize;
+            assert!(length > index, "Need to exist uncollected periods");
 
             let (mut elp_amount, mut i) = (0, index);
-            while i <= add_times {
+            while i < length {
                 if (i - index) >= 50 { break }
+                let cur_award = self.reward_contract.get_award(i as u32);
                 // 计算截止每一期奖励时间点，用户的币天数
-                let coinday_i = coinday_info.amount + balance * (awards[i].timestamp - coinday_info.timestamp);
-                // `awards` is a three elements tuple(elp_amount, cur_total_coinday, timestamp)
-                // TODO: 扩大了10**8，后续再考虑缩放
-                elp_amount += coinday_i * awards[i].amount * 1e8 as u128 / awards[i].total_coinday;
+                let coinday_i = coinday_info.amount + balance * (cur_award.timestamp - coinday_info.timestamp);
+                // 原日奖励已经扩大1e8，此处不用再扩大
+                elp_amount += coinday_i * cur_award.amount / cur_award.total_coinday;
                 i += 1;    
             }
 
             if elp_amount > 0 {
                 let old_reward = self.reward_contract.reward_of(user);
                 assert!(self.reward_contract.update_rewards(user, elp_amount + old_reward).is_ok());
-                self.increase_coinday_elp(user, awards[i].timestamp, i as u32);
+                let cur_award = self.reward_contract.get_award(i as u32);
+                self.increase_coinday_elp(user, cur_award.timestamp, i as u32);
             }
         }
 
-        fn get_elp_reward(&mut self, user: AccountId) -> Result<(u128, u32)> {
+        fn get_elp_reward(&mut self, user: AccountId) -> Result<(u128, u32)> { 
+            let now_time = self.env().block_timestamp().into();
+            // update daily award start time when total supply is zero(first mint relp tokens).
+            let total_supply = self.total_supply();
+            let deploy_time = self.reward_contract.deploy_time();
+            let daily_award = self.reward_contract.daily_award();
+            if total_supply == 0 && deploy_time == daily_award.1 {
+                assert!(self.reward_contract.update_daily_award((daily_award.0, now_time)).is_ok());
+            }
             // calculate reward to mint elp
             let balance = self.balance_of(user);
             let coinday_info = self.reward_contract.get_coinday_info(user);
-            let awards = self.reward_contract.awards();
-            let (index, add_times) = (coinday_info.last_index as usize, awards.len());
-            let now_time = self.env().block_timestamp().into();
-            // 限制每次最多只能领取50 periods
-            if add_times - index > 50 {
-                return Err(Error::NeedLiquidateBlockReward);
+            let length = self.reward_contract.awards_length() as usize;
+            let index = coinday_info.last_index as usize;
+
+            // TODO: 测试用，限制每次最多获取5 periods
+            if length - index > 5 && balance != 0 {
+                return Err(Error::NeedLiquidateIncreaseReward);
             }
+            // 对于有奖励可领取者，限制每次最多只能领取50 periods
+            // if length - index > 50 && balance != 0 {
+            //     return Err(Error::NeedLiquidateBlockReward);
+            // }
 
             let mut elp_amount = 0;
-            for i in index..add_times {
+            for i in index..length {
+                let cur_award = self.reward_contract.get_award(i as u32);
                 // 计算截止每一期奖励时间点，用户的币天数
-                let coinday_i = coinday_info.amount + balance * (awards[i].timestamp - coinday_info.timestamp);
-                // `awards` is a three elements tuple(elp_amount, cur_total_coinday, timestamp)
-                // TODO: 扩大了10**8，后续再考虑缩放
-                elp_amount += coinday_i * awards[i].amount * 1e8 as u128 / awards[i].total_coinday;
+                let coinday_i = coinday_info.amount + balance * (cur_award.timestamp - coinday_info.timestamp);
+                // 原日奖励已经扩大1e8，此处不用再扩大
+                elp_amount += coinday_i * cur_award.amount / cur_award.total_coinday;
             }
 
             // reward elp for user
@@ -586,7 +612,7 @@ mod relp {
                 let old_reward = self.reward_contract.reward_of(user);
                 assert!(self.reward_contract.update_rewards(user, elp_amount + old_reward).is_ok());
             }
-            Ok((now_time, add_times as u32))
+            Ok((now_time, length as u32))
         }
 
         fn decrease_coinday_elp(

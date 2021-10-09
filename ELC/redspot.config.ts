@@ -13,13 +13,14 @@ export default {
     ink: {
       docker: false,
       toolchain: "nightly",
-      sources: ["contracts/relp/*"],
+      sources: ["contracts/**/*"],
+      // sources: ["contracts/relp/*"],
     },
   },
   networks: {
     development: {
       endpoint: "ws://127.0.0.1:9944",
-      gasLimit: "400000000000",
+      gasLimit: "5000000000000",
       types: {},
       rpc: {
         europa: {
