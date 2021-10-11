@@ -120,8 +120,10 @@ mod govern {
         #[ink(message)]
         pub fn elcaim(&mut self) -> u128 {
             let now_time: u128 = self.env().block_timestamp().into();
-            // 每隔60000秒更新一次elcaim
-            let epochs = (now_time - self.last_update_elcaim) / 60000 * 1000;
+            // TODO: 测试用，每隔600次更新一次elcaim
+            let epochs = (now_time - self.last_update_elcaim) / (600 * 1000);
+            // // 每隔60000秒更新一次elcaim
+            // let epochs = (now_time - self.last_update_elcaim) / (60000 * 1000);
             let k_base = 100000;
             let mut elcaim = self.elcaim;
             let mut i = 0;
@@ -205,7 +207,8 @@ mod govern {
             }
 
             let current_block_number = self.env().block_number();
-            let delta_blocks = 201600;  // 出块时间为6s
+            let delta_blocks = 1200;  // TODO: 测试用
+            // let delta_blocks = 201600;  // 出块时间为6s
             let proposal = ProposalInfo{
                 type_: 1,
                 lock_amount,
