@@ -1,0 +1,310 @@
+{
+  "source": {
+    "hash": "0xf6033e8e8a411c488018a965a2ada634235c32aa6b821ee54e573c0caa2c9f96",
+    "language": "ink! 3.0.0-rc6",
+    "compiler": "rustc 1.58.0-nightly"
+  },
+  "contract": {
+    "name": "oracle",
+    "version": "0.1.0",
+    "authors": [
+      "[your_name] <[your_email]>"
+    ]
+  },
+  "V1": {
+    "spec": {
+      "constructors": [
+        {
+          "args": [],
+          "docs": [
+            "Constructor that initializes the `bool` value to the given `init_value`."
+          ],
+          "name": [
+            "new"
+          ],
+          "selector": "0x9bae9d5e"
+        }
+      ],
+      "docs": [],
+      "events": [],
+      "messages": [
+        {
+          "args": [
+            {
+              "name": "elp_price",
+              "type": {
+                "displayName": [
+                  "u128"
+                ],
+                "type": 0
+              }
+            },
+            {
+              "name": "elc_price",
+              "type": {
+                "displayName": [
+                  "u128"
+                ],
+                "type": 0
+              }
+            }
+          ],
+          "docs": [
+            " update every hour, decimal is 100000"
+          ],
+          "mutates": true,
+          "name": [
+            "update"
+          ],
+          "payable": false,
+          "returnType": {
+            "displayName": [
+              "Result"
+            ],
+            "type": 4
+          },
+          "selector": "0x5f234f5d"
+        },
+        {
+          "args": [],
+          "docs": [],
+          "mutates": false,
+          "name": [
+            "elp_price"
+          ],
+          "payable": false,
+          "returnType": {
+            "displayName": [
+              "u128"
+            ],
+            "type": 0
+          },
+          "selector": "0xcd86872d"
+        },
+        {
+          "args": [],
+          "docs": [],
+          "mutates": false,
+          "name": [
+            "elc_price"
+          ],
+          "payable": false,
+          "returnType": {
+            "displayName": [
+              "u128"
+            ],
+            "type": 0
+          },
+          "selector": "0x61505455"
+        },
+        {
+          "args": [],
+          "docs": [
+            " Contract owner."
+          ],
+          "mutates": false,
+          "name": [
+            "owner"
+          ],
+          "payable": false,
+          "returnType": {
+            "displayName": [
+              "AccountId"
+            ],
+            "type": 1
+          },
+          "selector": "0xfeaea4fa"
+        },
+        {
+          "args": [
+            {
+              "name": "new_owner",
+              "type": {
+                "displayName": [
+                  "AccountId"
+                ],
+                "type": 1
+              }
+            }
+          ],
+          "docs": [
+            " transfer contract ownership to new owner."
+          ],
+          "mutates": true,
+          "name": [
+            "transfer_ownership"
+          ],
+          "payable": false,
+          "returnType": {
+            "displayName": [
+              "Result"
+            ],
+            "type": 4
+          },
+          "selector": "0x107e33ea"
+        }
+      ]
+    },
+    "storage": {
+      "struct": {
+        "fields": [
+          {
+            "layout": {
+              "cell": {
+                "key": "0x0000000000000000000000000000000000000000000000000000000000000000",
+                "ty": 0
+              }
+            },
+            "name": "elp_price"
+          },
+          {
+            "layout": {
+              "cell": {
+                "key": "0x0100000000000000000000000000000000000000000000000000000000000000",
+                "ty": 0
+              }
+            },
+            "name": "elc_price"
+          },
+          {
+            "layout": {
+              "cell": {
+                "key": "0x0200000000000000000000000000000000000000000000000000000000000000",
+                "ty": 0
+              }
+            },
+            "name": "block_timestamp_last"
+          },
+          {
+            "layout": {
+              "cell": {
+                "key": "0x0300000000000000000000000000000000000000000000000000000000000000",
+                "ty": 1
+              }
+            },
+            "name": "owner"
+          }
+        ]
+      }
+    },
+    "types": [
+      {
+        "id": 0,
+        "type": {
+          "def": {
+            "primitive": "u128"
+          }
+        }
+      },
+      {
+        "id": 1,
+        "type": {
+          "def": {
+            "composite": {
+              "fields": [
+                {
+                  "type": 2,
+                  "typeName": "[u8; 32]"
+                }
+              ]
+            }
+          },
+          "path": [
+            "ink_env",
+            "types",
+            "AccountId"
+          ]
+        }
+      },
+      {
+        "id": 2,
+        "type": {
+          "def": {
+            "array": {
+              "len": 32,
+              "type": 3
+            }
+          }
+        }
+      },
+      {
+        "id": 3,
+        "type": {
+          "def": {
+            "primitive": "u8"
+          }
+        }
+      },
+      {
+        "id": 4,
+        "type": {
+          "def": {
+            "variant": {
+              "variants": [
+                {
+                  "fields": [
+                    {
+                      "type": 5
+                    }
+                  ],
+                  "index": 0,
+                  "name": "Ok"
+                },
+                {
+                  "fields": [
+                    {
+                      "type": 6
+                    }
+                  ],
+                  "index": 1,
+                  "name": "Err"
+                }
+              ]
+            }
+          },
+          "params": [
+            {
+              "name": "T",
+              "type": 5
+            },
+            {
+              "name": "E",
+              "type": 6
+            }
+          ],
+          "path": [
+            "Result"
+          ]
+        }
+      },
+      {
+        "id": 5,
+        "type": {
+          "def": {
+            "tuple": []
+          }
+        }
+      },
+      {
+        "id": 6,
+        "type": {
+          "def": {
+            "variant": {
+              "variants": [
+                {
+                  "index": 0,
+                  "name": "OnlyOwnerAccess"
+                }
+              ]
+            }
+          },
+          "path": [
+            "oracle",
+            "oracle",
+            "Error"
+          ]
+        }
+      }
+    ]
+  }
+}

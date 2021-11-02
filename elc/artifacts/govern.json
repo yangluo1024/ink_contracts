@@ -1,0 +1,757 @@
+{
+  "source": {
+    "hash": "0xaae694373e762ae19cf88417ffc4d3d62213c188d3190382a8e06c5f99bda169",
+    "language": "ink! 3.0.0-rc6",
+    "compiler": "rustc 1.58.0-nightly"
+  },
+  "contract": {
+    "name": "govern",
+    "version": "0.1.0",
+    "authors": [
+      "[your_name] <[your_email]>"
+    ]
+  },
+  "V1": {
+    "spec": {
+      "constructors": [
+        {
+          "args": [
+            {
+              "name": "relp_token",
+              "type": {
+                "displayName": [
+                  "AccountId"
+                ],
+                "type": 3
+              }
+            }
+          ],
+          "docs": [],
+          "name": [
+            "new"
+          ],
+          "selector": "0x9bae9d5e"
+        }
+      ],
+      "docs": [],
+      "events": [
+        {
+          "args": [
+            {
+              "docs": [],
+              "indexed": true,
+              "name": "name",
+              "type": {
+                "displayName": [
+                  "String"
+                ],
+                "type": 9
+              }
+            },
+            {
+              "docs": [],
+              "indexed": true,
+              "name": "caller",
+              "type": {
+                "displayName": [
+                  "AccountId"
+                ],
+                "type": 3
+              }
+            },
+            {
+              "docs": [],
+              "indexed": true,
+              "name": "lock_amount",
+              "type": {
+                "displayName": [
+                  "Balance"
+                ],
+                "type": 0
+              }
+            },
+            {
+              "docs": [],
+              "indexed": true,
+              "name": "new_k",
+              "type": {
+                "displayName": [
+                  "u128"
+                ],
+                "type": 0
+              }
+            }
+          ],
+          "docs": [],
+          "name": "NewProposal"
+        }
+      ],
+      "messages": [
+        {
+          "args": [],
+          "docs": [
+            " Return ELCaim price"
+          ],
+          "mutates": true,
+          "name": [
+            "elcaim"
+          ],
+          "payable": false,
+          "returnType": {
+            "displayName": [
+              "u128"
+            ],
+            "type": 0
+          },
+          "selector": "0xba56ea53"
+        },
+        {
+          "args": [],
+          "docs": [
+            " Proposal minimum RELP requirements"
+          ],
+          "mutates": false,
+          "name": [
+            "proposal_needs"
+          ],
+          "payable": false,
+          "returnType": {
+            "displayName": [
+              "Balance"
+            ],
+            "type": 0
+          },
+          "selector": "0x57148683"
+        },
+        {
+          "args": [
+            {
+              "name": "new_value",
+              "type": {
+                "displayName": [
+                  "Balance"
+                ],
+                "type": 0
+              }
+            }
+          ],
+          "docs": [
+            " Set the proposal needs(Proposal minimum RELP requirements)"
+          ],
+          "mutates": true,
+          "name": [
+            "set_proposal_needs"
+          ],
+          "payable": false,
+          "returnType": {
+            "displayName": [
+              "Result"
+            ],
+            "type": 5
+          },
+          "selector": "0x6b3763ce"
+        },
+        {
+          "args": [],
+          "docs": [
+            " Minimum requirement for total voted accounts after ending time"
+          ],
+          "mutates": false,
+          "name": [
+            "accounts_needs"
+          ],
+          "payable": false,
+          "returnType": {
+            "displayName": [
+              "u8"
+            ],
+            "type": 1
+          },
+          "selector": "0x77bbdba8"
+        },
+        {
+          "args": [
+            {
+              "name": "new_value",
+              "type": {
+                "displayName": [
+                  "u8"
+                ],
+                "type": 1
+              }
+            }
+          ],
+          "docs": [
+            " Set the accounts needs(Minimum requirement for total voted accounts after ending time)"
+          ],
+          "mutates": true,
+          "name": [
+            "set_accounts_needs"
+          ],
+          "payable": false,
+          "returnType": {
+            "displayName": [
+              "Result"
+            ],
+            "type": 5
+          },
+          "selector": "0x56356081"
+        },
+        {
+          "args": [],
+          "docs": [
+            " Total votes in favour of the proposal"
+          ],
+          "mutates": false,
+          "name": [
+            "total_approve_vote"
+          ],
+          "payable": false,
+          "returnType": {
+            "displayName": [
+              "Balance"
+            ],
+            "type": 0
+          },
+          "selector": "0xc71a329e"
+        },
+        {
+          "args": [],
+          "docs": [
+            " Total votes against the proposal"
+          ],
+          "mutates": false,
+          "name": [
+            "total_against_vote"
+          ],
+          "payable": false,
+          "returnType": {
+            "displayName": [
+              "Balance"
+            ],
+            "type": 0
+          },
+          "selector": "0x7b5cb087"
+        },
+        {
+          "args": [
+            {
+              "name": "lock_amount",
+              "type": {
+                "displayName": [
+                  "Balance"
+                ],
+                "type": 0
+              }
+            },
+            {
+              "name": "new_k",
+              "type": {
+                "displayName": [
+                  "u128"
+                ],
+                "type": 0
+              }
+            }
+          ],
+          "docs": [
+            " proposal for update k"
+          ],
+          "mutates": true,
+          "name": [
+            "proposal_update_k"
+          ],
+          "payable": false,
+          "returnType": {
+            "displayName": [
+              "Result"
+            ],
+            "type": 5
+          },
+          "selector": "0xac21d8c1"
+        },
+        {
+          "args": [],
+          "docs": [
+            " Use to retrieve the locked balance in history.",
+            " When voting on a new proposal or start a new proposal, the locked balance will be retrieved automatically."
+          ],
+          "mutates": true,
+          "name": [
+            "withdraw_lock_amount"
+          ],
+          "payable": false,
+          "returnType": null,
+          "selector": "0x88737196"
+        },
+        {
+          "args": [],
+          "docs": [
+            " update status of proposal.",
+            " 0 for No proposal, 1 for Proposal period, 2 for Vote period, 3 for Passed, 4 for Vetoed."
+          ],
+          "mutates": true,
+          "name": [
+            "update"
+          ],
+          "payable": false,
+          "returnType": {
+            "displayName": [
+              "u8"
+            ],
+            "type": 1
+          },
+          "selector": "0x5f234f5d"
+        },
+        {
+          "args": [
+            {
+              "name": "vote_amount",
+              "type": {
+                "displayName": [
+                  "Balance"
+                ],
+                "type": 0
+              }
+            },
+            {
+              "name": "is_approve",
+              "type": {
+                "displayName": [
+                  "bool"
+                ],
+                "type": 8
+              }
+            }
+          ],
+          "docs": [
+            " Vote on the proposal by RELP, 1 RELP token for 1 vote.",
+            " give `is_approve` true to approve the proposal."
+          ],
+          "mutates": true,
+          "name": [
+            "vote"
+          ],
+          "payable": false,
+          "returnType": {
+            "displayName": [
+              "Result"
+            ],
+            "type": 5
+          },
+          "selector": "0x083be260"
+        },
+        {
+          "args": [
+            {
+              "name": "new_owner",
+              "type": {
+                "displayName": [
+                  "AccountId"
+                ],
+                "type": 3
+              }
+            }
+          ],
+          "docs": [
+            " TODO: Withdraw vote"
+          ],
+          "mutates": true,
+          "name": [
+            "transfer_ownership"
+          ],
+          "payable": false,
+          "returnType": {
+            "displayName": [
+              "Result"
+            ],
+            "type": 5
+          },
+          "selector": "0x107e33ea"
+        },
+        {
+          "args": [],
+          "docs": [],
+          "mutates": false,
+          "name": [
+            "owner"
+          ],
+          "payable": false,
+          "returnType": {
+            "displayName": [
+              "AccountId"
+            ],
+            "type": 3
+          },
+          "selector": "0xfeaea4fa"
+        }
+      ]
+    },
+    "storage": {
+      "struct": {
+        "fields": [
+          {
+            "layout": {
+              "cell": {
+                "key": "0x0000000000000000000000000000000000000000000000000000000000000000",
+                "ty": 0
+              }
+            },
+            "name": "elcaim"
+          },
+          {
+            "layout": {
+              "cell": {
+                "key": "0x0100000000000000000000000000000000000000000000000000000000000000",
+                "ty": 0
+              }
+            },
+            "name": "k"
+          },
+          {
+            "layout": {
+              "cell": {
+                "key": "0x0200000000000000000000000000000000000000000000000000000000000000",
+                "ty": 0
+              }
+            },
+            "name": "proposal_needs"
+          },
+          {
+            "layout": {
+              "cell": {
+                "key": "0x0300000000000000000000000000000000000000000000000000000000000000",
+                "ty": 1
+              }
+            },
+            "name": "accounts_needs"
+          },
+          {
+            "layout": {
+              "struct": {
+                "fields": [
+                  {
+                    "layout": {
+                      "cell": {
+                        "key": "0x0400000000000000000000000000000000000000000000000000000000000000",
+                        "ty": 1
+                      }
+                    },
+                    "name": "type_"
+                  },
+                  {
+                    "layout": {
+                      "cell": {
+                        "key": "0x0500000000000000000000000000000000000000000000000000000000000000",
+                        "ty": 0
+                      }
+                    },
+                    "name": "lock_amount"
+                  },
+                  {
+                    "layout": {
+                      "cell": {
+                        "key": "0x0600000000000000000000000000000000000000000000000000000000000000",
+                        "ty": 2
+                      }
+                    },
+                    "name": "begin"
+                  },
+                  {
+                    "layout": {
+                      "cell": {
+                        "key": "0x0700000000000000000000000000000000000000000000000000000000000000",
+                        "ty": 2
+                      }
+                    },
+                    "name": "vote_begin"
+                  },
+                  {
+                    "layout": {
+                      "cell": {
+                        "key": "0x0800000000000000000000000000000000000000000000000000000000000000",
+                        "ty": 3
+                      }
+                    },
+                    "name": "proposer"
+                  },
+                  {
+                    "layout": {
+                      "cell": {
+                        "key": "0x0900000000000000000000000000000000000000000000000000000000000000",
+                        "ty": 1
+                      }
+                    },
+                    "name": "status"
+                  },
+                  {
+                    "layout": {
+                      "cell": {
+                        "key": "0x0a00000000000000000000000000000000000000000000000000000000000000",
+                        "ty": 2
+                      }
+                    },
+                    "name": "end"
+                  },
+                  {
+                    "layout": {
+                      "cell": {
+                        "key": "0x0b00000000000000000000000000000000000000000000000000000000000000",
+                        "ty": 0
+                      }
+                    },
+                    "name": "new_k"
+                  }
+                ]
+              }
+            },
+            "name": "proposal"
+          },
+          {
+            "layout": {
+              "cell": {
+                "key": "0x0c00000000000000000000000000000000000000000000000000000000000000",
+                "ty": 0
+              }
+            },
+            "name": "total_account"
+          },
+          {
+            "layout": {
+              "cell": {
+                "key": "0x0d00000000000000000000000000000000000000000000000000000000000000",
+                "ty": 0
+              }
+            },
+            "name": "total_approve_vote"
+          },
+          {
+            "layout": {
+              "cell": {
+                "key": "0x0e00000000000000000000000000000000000000000000000000000000000000",
+                "ty": 0
+              }
+            },
+            "name": "total_against_vote"
+          },
+          {
+            "layout": {
+              "struct": {
+                "fields": [
+                  {
+                    "layout": {
+                      "struct": {
+                        "fields": [
+                          {
+                            "layout": {
+                              "cell": {
+                                "key": "0x0f00000000000000000000000000000000000000000000000000000000000000",
+                                "ty": 3
+                              }
+                            },
+                            "name": "account_id"
+                          }
+                        ]
+                      }
+                    },
+                    "name": "inner"
+                  }
+                ]
+              }
+            },
+            "name": "relp_contract"
+          },
+          {
+            "layout": {
+              "cell": {
+                "key": "0x1000000000000000000000000000000000000000000000000000000000000000",
+                "ty": 0
+              }
+            },
+            "name": "last_update_elcaim"
+          },
+          {
+            "layout": {
+              "cell": {
+                "key": "0x1100000000000000000000000000000000000000000000000000000000000000",
+                "ty": 3
+              }
+            },
+            "name": "owner"
+          }
+        ]
+      }
+    },
+    "types": [
+      {
+        "id": 0,
+        "type": {
+          "def": {
+            "primitive": "u128"
+          }
+        }
+      },
+      {
+        "id": 1,
+        "type": {
+          "def": {
+            "primitive": "u8"
+          }
+        }
+      },
+      {
+        "id": 2,
+        "type": {
+          "def": {
+            "primitive": "u32"
+          }
+        }
+      },
+      {
+        "id": 3,
+        "type": {
+          "def": {
+            "composite": {
+              "fields": [
+                {
+                  "type": 4,
+                  "typeName": "[u8; 32]"
+                }
+              ]
+            }
+          },
+          "path": [
+            "ink_env",
+            "types",
+            "AccountId"
+          ]
+        }
+      },
+      {
+        "id": 4,
+        "type": {
+          "def": {
+            "array": {
+              "len": 32,
+              "type": 1
+            }
+          }
+        }
+      },
+      {
+        "id": 5,
+        "type": {
+          "def": {
+            "variant": {
+              "variants": [
+                {
+                  "fields": [
+                    {
+                      "type": 6
+                    }
+                  ],
+                  "index": 0,
+                  "name": "Ok"
+                },
+                {
+                  "fields": [
+                    {
+                      "type": 7
+                    }
+                  ],
+                  "index": 1,
+                  "name": "Err"
+                }
+              ]
+            }
+          },
+          "params": [
+            {
+              "name": "T",
+              "type": 6
+            },
+            {
+              "name": "E",
+              "type": 7
+            }
+          ],
+          "path": [
+            "Result"
+          ]
+        }
+      },
+      {
+        "id": 6,
+        "type": {
+          "def": {
+            "tuple": []
+          }
+        }
+      },
+      {
+        "id": 7,
+        "type": {
+          "def": {
+            "variant": {
+              "variants": [
+                {
+                  "index": 0,
+                  "name": "OnlyOwnerAccess"
+                },
+                {
+                  "index": 1,
+                  "name": "ProposalAreadyExist"
+                },
+                {
+                  "index": 2,
+                  "name": "ProposalOnVoting"
+                },
+                {
+                  "index": 3,
+                  "name": "InsufficientBalance"
+                },
+                {
+                  "index": 4,
+                  "name": "InsufficientAmount"
+                },
+                {
+                  "index": 5,
+                  "name": "ExistHigherLockAmount"
+                },
+                {
+                  "index": 6,
+                  "name": "NonVotingPeriod"
+                },
+                {
+                  "index": 7,
+                  "name": "AlreadyVoted"
+                }
+              ]
+            }
+          },
+          "path": [
+            "govern",
+            "govern",
+            "Error"
+          ]
+        }
+      },
+      {
+        "id": 8,
+        "type": {
+          "def": {
+            "primitive": "bool"
+          }
+        }
+      },
+      {
+        "id": 9,
+        "type": {
+          "def": {
+            "primitive": "str"
+          }
+        }
+      }
+    ]
+  }
+}

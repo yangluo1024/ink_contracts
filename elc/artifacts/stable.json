@@ -1,0 +1,798 @@
+{
+  "source": {
+    "hash": "0x0ea6865f6fe263d811876dfb7eece205e95acefbd1f45907ab0d93d3a56e4536",
+    "language": "ink! 3.0.0-rc6",
+    "compiler": "rustc 1.58.0-nightly"
+  },
+  "contract": {
+    "name": "stable",
+    "version": "0.1.0",
+    "authors": [
+      "[your_name] <[your_email]>"
+    ]
+  },
+  "V1": {
+    "spec": {
+      "constructors": [
+        {
+          "args": [
+            {
+              "name": "elc_token",
+              "type": {
+                "displayName": [
+                  "AccountId"
+                ],
+                "type": 1
+              }
+            },
+            {
+              "name": "relp_token",
+              "type": {
+                "displayName": [
+                  "AccountId"
+                ],
+                "type": 1
+              }
+            },
+            {
+              "name": "govern_addr",
+              "type": {
+                "displayName": [
+                  "AccountId"
+                ],
+                "type": 1
+              }
+            },
+            {
+              "name": "oracle_addr",
+              "type": {
+                "displayName": [
+                  "AccountId"
+                ],
+                "type": 1
+              }
+            },
+            {
+              "name": "additional_addr",
+              "type": {
+                "displayName": [
+                  "AccountId"
+                ],
+                "type": 1
+              }
+            },
+            {
+              "name": "exchange_addr",
+              "type": {
+                "displayName": [
+                  "AccountId"
+                ],
+                "type": 1
+              }
+            }
+          ],
+          "docs": [],
+          "name": [
+            "new"
+          ],
+          "selector": "0x9bae9d5e"
+        }
+      ],
+      "docs": [],
+      "events": [
+        {
+          "args": [
+            {
+              "docs": [],
+              "indexed": true,
+              "name": "sender",
+              "type": {
+                "displayName": [
+                  "AccountId"
+                ],
+                "type": 1
+              }
+            },
+            {
+              "docs": [],
+              "indexed": true,
+              "name": "elp_amount",
+              "type": {
+                "displayName": [
+                  "u128"
+                ],
+                "type": 0
+              }
+            },
+            {
+              "docs": [],
+              "indexed": true,
+              "name": "relp_amount",
+              "type": {
+                "displayName": [
+                  "u128"
+                ],
+                "type": 0
+              }
+            },
+            {
+              "docs": [],
+              "indexed": true,
+              "name": "elc_amount",
+              "type": {
+                "displayName": [
+                  "u128"
+                ],
+                "type": 0
+              }
+            }
+          ],
+          "docs": [],
+          "name": "AddLiquidity"
+        },
+        {
+          "args": [
+            {
+              "docs": [],
+              "indexed": true,
+              "name": "sender",
+              "type": {
+                "displayName": [
+                  "AccountId"
+                ],
+                "type": 1
+              }
+            },
+            {
+              "docs": [],
+              "indexed": true,
+              "name": "relp_amount",
+              "type": {
+                "displayName": [
+                  "u128"
+                ],
+                "type": 0
+              }
+            },
+            {
+              "docs": [],
+              "indexed": true,
+              "name": "elc_amount",
+              "type": {
+                "displayName": [
+                  "u128"
+                ],
+                "type": 0
+              }
+            },
+            {
+              "docs": [],
+              "indexed": true,
+              "name": "elp_amount",
+              "type": {
+                "displayName": [
+                  "u128"
+                ],
+                "type": 0
+              }
+            }
+          ],
+          "docs": [],
+          "name": "RemoveLiquidity"
+        },
+        {
+          "args": [
+            {
+              "docs": [],
+              "indexed": true,
+              "name": "elc_reserve_amount",
+              "type": {
+                "displayName": [
+                  "u128"
+                ],
+                "type": 0
+              }
+            },
+            {
+              "docs": [],
+              "indexed": true,
+              "name": "elc_risk_amount",
+              "type": {
+                "displayName": [
+                  "u128"
+                ],
+                "type": 0
+              }
+            },
+            {
+              "docs": [],
+              "indexed": true,
+              "name": "elc_raise_amount",
+              "type": {
+                "displayName": [
+                  "u128"
+                ],
+                "type": 0
+              }
+            },
+            {
+              "docs": [],
+              "indexed": true,
+              "name": "elp_amount",
+              "type": {
+                "displayName": [
+                  "u128"
+                ],
+                "type": 0
+              }
+            }
+          ],
+          "docs": [],
+          "name": "ExpandEvent"
+        },
+        {
+          "args": [
+            {
+              "docs": [],
+              "indexed": true,
+              "name": "elc_risk_reserve_source",
+              "type": {
+                "displayName": [
+                  "u128"
+                ],
+                "type": 0
+              }
+            },
+            {
+              "docs": [],
+              "indexed": true,
+              "name": "elc_reserve_source",
+              "type": {
+                "displayName": [
+                  "u128"
+                ],
+                "type": 0
+              }
+            },
+            {
+              "docs": [],
+              "indexed": true,
+              "name": "risk_reserve_consumed",
+              "type": {
+                "displayName": [
+                  "u128"
+                ],
+                "type": 0
+              }
+            },
+            {
+              "docs": [],
+              "indexed": true,
+              "name": "reserve_consumed",
+              "type": {
+                "displayName": [
+                  "u128"
+                ],
+                "type": 0
+              }
+            }
+          ],
+          "docs": [],
+          "name": "ContractEvent"
+        }
+      ],
+      "messages": [
+        {
+          "args": [],
+          "docs": [
+            " add liquidity for ELP，returns rELP and ELC"
+          ],
+          "mutates": true,
+          "name": [
+            "add_liquidity"
+          ],
+          "payable": true,
+          "returnType": {
+            "displayName": [],
+            "type": 4
+          },
+          "selector": "0x264cd04b"
+        },
+        {
+          "args": [
+            {
+              "name": "elp_amount_deposit",
+              "type": {
+                "displayName": [
+                  "Balance"
+                ],
+                "type": 0
+              }
+            }
+          ],
+          "docs": [
+            " compute add-liquidity threshold for internal and external call"
+          ],
+          "mutates": false,
+          "name": [
+            "compute_liquidity"
+          ],
+          "payable": false,
+          "returnType": {
+            "displayName": [],
+            "type": 4
+          },
+          "selector": "0xc4a97f95"
+        },
+        {
+          "args": [
+            {
+              "name": "relp_amount",
+              "type": {
+                "displayName": [
+                  "Balance"
+                ],
+                "type": 0
+              }
+            }
+          ],
+          "docs": [
+            " remove liquidity, user can redeem their ELP by burn rELP and ELC.",
+            " elc amount will be calculated automatically by `relp_amount`."
+          ],
+          "mutates": true,
+          "name": [
+            "remove_liquidity"
+          ],
+          "payable": false,
+          "returnType": {
+            "displayName": [
+              "Balance"
+            ],
+            "type": 0
+          },
+          "selector": "0xbdd16bfa"
+        },
+        {
+          "args": [],
+          "docs": [
+            " when price higher:",
+            " 1.call swap contract, swap elc for elp",
+            " 2.raise ELC"
+          ],
+          "mutates": true,
+          "name": [
+            "expand_elc"
+          ],
+          "payable": false,
+          "returnType": null,
+          "selector": "0x52f53857"
+        },
+        {
+          "args": [],
+          "docs": [],
+          "mutates": true,
+          "name": [
+            "contract_elc"
+          ],
+          "payable": true,
+          "returnType": null,
+          "selector": "0x85580647"
+        },
+        {
+          "args": [],
+          "docs": [
+            " compute liability ratio"
+          ],
+          "mutates": false,
+          "name": [
+            "liability_ratio"
+          ],
+          "payable": false,
+          "returnType": {
+            "displayName": [
+              "u128"
+            ],
+            "type": 0
+          },
+          "selector": "0x6b1de185"
+        },
+        {
+          "args": [],
+          "docs": [
+            "compute internal relp price for query"
+          ],
+          "mutates": false,
+          "name": [
+            "relp_price"
+          ],
+          "payable": false,
+          "returnType": {
+            "displayName": [
+              "u128"
+            ],
+            "type": 0
+          },
+          "selector": "0x425cc1cc"
+        },
+        {
+          "args": [],
+          "docs": [
+            " Do not direct tranfer ELP to deployed pool address, use this function"
+          ],
+          "mutates": true,
+          "name": [
+            "add_risk_reserve"
+          ],
+          "payable": true,
+          "returnType": null,
+          "selector": "0xbb5a233b"
+        },
+        {
+          "args": [],
+          "docs": [],
+          "mutates": false,
+          "name": [
+            "elp_reserve"
+          ],
+          "payable": false,
+          "returnType": {
+            "displayName": [
+              "u128"
+            ],
+            "type": 0
+          },
+          "selector": "0xc83e5856"
+        },
+        {
+          "args": [],
+          "docs": [],
+          "mutates": false,
+          "name": [
+            "elp_risk_reserve"
+          ],
+          "payable": false,
+          "returnType": {
+            "displayName": [
+              "u128"
+            ],
+            "type": 0
+          },
+          "selector": "0x0f69ce27"
+        },
+        {
+          "args": [],
+          "docs": [],
+          "mutates": false,
+          "name": [
+            "elc_reserve"
+          ],
+          "payable": false,
+          "returnType": {
+            "displayName": [
+              "u128"
+            ],
+            "type": 0
+          },
+          "selector": "0xa27344e8"
+        },
+        {
+          "args": [],
+          "docs": [],
+          "mutates": false,
+          "name": [
+            "elc_risk_reserve"
+          ],
+          "payable": false,
+          "returnType": {
+            "displayName": [
+              "u128"
+            ],
+            "type": 0
+          },
+          "selector": "0x8bce84a9"
+        }
+      ]
+    },
+    "storage": {
+      "struct": {
+        "fields": [
+          {
+            "layout": {
+              "cell": {
+                "key": "0x0000000000000000000000000000000000000000000000000000000000000000",
+                "ty": 0
+              }
+            },
+            "name": "reserve"
+          },
+          {
+            "layout": {
+              "cell": {
+                "key": "0x0100000000000000000000000000000000000000000000000000000000000000",
+                "ty": 0
+              }
+            },
+            "name": "risk_reserve"
+          },
+          {
+            "layout": {
+              "cell": {
+                "key": "0x0200000000000000000000000000000000000000000000000000000000000000",
+                "ty": 0
+              }
+            },
+            "name": "elc_risk_reserve_source"
+          },
+          {
+            "layout": {
+              "cell": {
+                "key": "0x0300000000000000000000000000000000000000000000000000000000000000",
+                "ty": 0
+              }
+            },
+            "name": "elc_reserve_source"
+          },
+          {
+            "layout": {
+              "cell": {
+                "key": "0x0400000000000000000000000000000000000000000000000000000000000000",
+                "ty": 0
+              }
+            },
+            "name": "last_expand_time"
+          },
+          {
+            "layout": {
+              "cell": {
+                "key": "0x0500000000000000000000000000000000000000000000000000000000000000",
+                "ty": 0
+              }
+            },
+            "name": "last_contract_time"
+          },
+          {
+            "layout": {
+              "cell": {
+                "key": "0x0600000000000000000000000000000000000000000000000000000000000000",
+                "ty": 0
+              }
+            },
+            "name": "adjust_gap"
+          },
+          {
+            "layout": {
+              "struct": {
+                "fields": [
+                  {
+                    "layout": {
+                      "struct": {
+                        "fields": [
+                          {
+                            "layout": {
+                              "cell": {
+                                "key": "0x0700000000000000000000000000000000000000000000000000000000000000",
+                                "ty": 1
+                              }
+                            },
+                            "name": "account_id"
+                          }
+                        ]
+                      }
+                    },
+                    "name": "inner"
+                  }
+                ]
+              }
+            },
+            "name": "elc_contract"
+          },
+          {
+            "layout": {
+              "struct": {
+                "fields": [
+                  {
+                    "layout": {
+                      "struct": {
+                        "fields": [
+                          {
+                            "layout": {
+                              "cell": {
+                                "key": "0x0800000000000000000000000000000000000000000000000000000000000000",
+                                "ty": 1
+                              }
+                            },
+                            "name": "account_id"
+                          }
+                        ]
+                      }
+                    },
+                    "name": "inner"
+                  }
+                ]
+              }
+            },
+            "name": "relp_contract"
+          },
+          {
+            "layout": {
+              "struct": {
+                "fields": [
+                  {
+                    "layout": {
+                      "struct": {
+                        "fields": [
+                          {
+                            "layout": {
+                              "cell": {
+                                "key": "0x0900000000000000000000000000000000000000000000000000000000000000",
+                                "ty": 1
+                              }
+                            },
+                            "name": "account_id"
+                          }
+                        ]
+                      }
+                    },
+                    "name": "inner"
+                  }
+                ]
+              }
+            },
+            "name": "govern_contract"
+          },
+          {
+            "layout": {
+              "struct": {
+                "fields": [
+                  {
+                    "layout": {
+                      "struct": {
+                        "fields": [
+                          {
+                            "layout": {
+                              "cell": {
+                                "key": "0x0a00000000000000000000000000000000000000000000000000000000000000",
+                                "ty": 1
+                              }
+                            },
+                            "name": "account_id"
+                          }
+                        ]
+                      }
+                    },
+                    "name": "inner"
+                  }
+                ]
+              }
+            },
+            "name": "oracle_contract"
+          },
+          {
+            "layout": {
+              "struct": {
+                "fields": [
+                  {
+                    "layout": {
+                      "struct": {
+                        "fields": [
+                          {
+                            "layout": {
+                              "cell": {
+                                "key": "0x0b00000000000000000000000000000000000000000000000000000000000000",
+                                "ty": 1
+                              }
+                            },
+                            "name": "account_id"
+                          }
+                        ]
+                      }
+                    },
+                    "name": "inner"
+                  }
+                ]
+              }
+            },
+            "name": "add_contract"
+          },
+          {
+            "layout": {
+              "struct": {
+                "fields": [
+                  {
+                    "layout": {
+                      "struct": {
+                        "fields": [
+                          {
+                            "layout": {
+                              "cell": {
+                                "key": "0x0c00000000000000000000000000000000000000000000000000000000000000",
+                                "ty": 1
+                              }
+                            },
+                            "name": "account_id"
+                          }
+                        ]
+                      }
+                    },
+                    "name": "inner"
+                  }
+                ]
+              }
+            },
+            "name": "exchange_contract"
+          },
+          {
+            "layout": {
+              "cell": {
+                "key": "0x0d00000000000000000000000000000000000000000000000000000000000000",
+                "ty": 1
+              }
+            },
+            "name": "exchange_accountid"
+          }
+        ]
+      }
+    },
+    "types": [
+      {
+        "id": 0,
+        "type": {
+          "def": {
+            "primitive": "u128"
+          }
+        }
+      },
+      {
+        "id": 1,
+        "type": {
+          "def": {
+            "composite": {
+              "fields": [
+                {
+                  "type": 2,
+                  "typeName": "[u8; 32]"
+                }
+              ]
+            }
+          },
+          "path": [
+            "ink_env",
+            "types",
+            "AccountId"
+          ]
+        }
+      },
+      {
+        "id": 2,
+        "type": {
+          "def": {
+            "array": {
+              "len": 32,
+              "type": 3
+            }
+          }
+        }
+      },
+      {
+        "id": 3,
+        "type": {
+          "def": {
+            "primitive": "u8"
+          }
+        }
+      },
+      {
+        "id": 4,
+        "type": {
+          "def": {
+            "tuple": [
+              0,
+              0
+            ]
+          }
+        }
+      }
+    ]
+  }
+}
