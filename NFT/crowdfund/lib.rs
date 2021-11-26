@@ -7,10 +7,27 @@ mod crowdfund {
     use ink_storage::collections::HashMap as StorageHashMap;
     use ink_storage::traits::{SpreadLayout, PackedLayout};
     use ink_prelude::vec::Vec;
+    use scale::{Encode, Decode};
 
-    /// Defines the storage of your contract.
-    /// Add new fields to the below struct in order
-    /// to add new static storage fields to your contract.
+    #[derive(Debug, PartialEq, Eq, Encode, Decode, SpreadLayout, PackedLayout)]
+    #[cfg_attr(feature = "std", derive(scale_info::TypeInfo))]
+    pub struct UserInfo {
+        amount: u128,  // pledged tokens before crowdfund success
+        won_amount: u128, // won tokens in draw lots
+        // reward_debts: StorageHashMap<AccountId, u128>, // token addr
+        release_amount: u128, // after crowdfund success, 80% each month, 20% after 12 months
+        start_index_HNQ: u128,
+        end_index_HNQ: u128,
+    }
+
+    #[derive(Debug, PartialEq, Eq, Encode, Decode, SpreadLayout, PackedLayout)]
+    #[cfg_attr(feature = "std", derive(scale_info::TypeInfo))]
+    pub struct PoolInfo {
+        proposal_id: u128,  // equal to collection id
+        open_amount: u128,
+        
+    }
+
     #[ink(storage)]
     pub struct Crowdfund {
         /// Stores a single `bool` value on the storage.
